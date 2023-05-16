@@ -23,7 +23,8 @@ class TrajectoriesGenerator:
                  random_object_prob=0.15,
                  no_object_prob=0.5,
                  hit_max_z_angle=15,
-                 field_size=30):
+                 field_size=30,
+                 padding_size=0.25):
         self.n_samples = n_samples
         self.n_frames = n_frames
         self.angle_xy_range = angle_xy_range
@@ -40,6 +41,7 @@ class TrajectoriesGenerator:
         self.hit_max_z_angle = hit_max_z_angle
         self.min_hit_distance = self.get_position_z(ball_size_range[1]) + np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/30
         self.max_hit_distance = self.get_position_z(ball_size_range[0]) - np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/30
+        self.padding_size = padding_size
         self.params = self.__dict__.copy()
         print("Initalization params:\n", ", ".join([f"{k}={v}" for k, v in self.params.items()]))
     
@@ -199,7 +201,29 @@ class TrajectoriesGenerator:
 
         return image_positions, image_diameter, velocities
     
-    def __call__(self, add_noise=True, clip=True):
+    def random_padding(self, image_positions, image_diameter, velocities):
+        mask = np.ones((self.n_samples, self.n_frames, 1), dtype=int)
+        padding_size = np.random.randint(0, int(self.n_frames*self.padding_size), size=self.n_samples)
+        padding_mode = np.random.choice(['left', 'right'], size=self.n_samples)
+        for i in range(self.n_samples):
+            if padding_mode[i] == 'left':
+                mask[i, :padding_size[i]] = 0
+            else:
+                mask[i, -padding_size[i]:] = 0
+
+        image_positions = np.where(mask == 0,
+                                   -1,
+                                   image_positions)
+        image_diameter = np.where(mask == 0,
+                                    -1,
+                                    image_diameter)
+        velocities = np.where(mask == 0,
+                                -1,
+                                velocities)
+        
+        return image_positions, image_diameter, velocities
+    
+    def __call__(self, add_noise=True, random_padding=True, clip=True):
         positions, velocities = self.generate_trajectories(generate_start_position=True)
         self.diff_time = -self.diff_time
         backward_positions, backward_velocities = self.generate_trajectories(generate_start_position=False)
@@ -209,6 +233,8 @@ class TrajectoriesGenerator:
             image_positions, image_diameter = self.add_noise(image_positions, image_diameter)
         if clip:
             image_positions, image_diameter, velocities = self.clip(image_positions, image_diameter, velocities)
+        if random_padding:
+            image_positions, image_diameter, velocities = self.random_padding(image_positions, image_diameter, velocities)
 
         return image_positions, image_diameter, velocities
     
