@@ -47,22 +47,30 @@ class TrajectoriesGenerator:
     def velocity_norm(self):
         return np.linalg.norm(self.velocity, axis=-1)
 
-    def draw_parameters(self):
-        self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*np.random.choice(self.slow_motion_coefs, size=(self.n_samples, 1)))
+    def draw_parameters(self, generate_start_position=True):
+        if generate_start_position:
+            self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*np.random.choice(self.slow_motion_coefs, size=(self.n_samples, 1)))
 
-        self.angle_xy = np.random.uniform(*self.angle_xy_range, size=self.n_samples)
-        self.angle_y = np.random.uniform(*self.angle_y_range, size=self.n_samples)
-        self.start_position = np.concatenate([np.random.uniform(-2, 2, size=(self.n_samples, 2)),
-                                              log_rand(self.min_hit_distance, self.max_hit_distance, size=(self.n_samples, 1))], axis=-1)
+            self.angle_xy = np.random.uniform(*self.angle_xy_range, size=self.n_samples)
+            self.angle_y = np.random.uniform(*self.angle_y_range, size=self.n_samples)
+            self.start_position = np.concatenate([np.random.uniform(-2, 2, size=(self.n_samples, 2)),
+                                                log_rand(self.min_hit_distance, self.max_hit_distance, size=(self.n_samples, 1))], axis=-1)
 
-        start_velocity_norm = log_rand(*self.velocity_range, size=(self.n_samples, 1))
-        hit_angle_xy = np.random.uniform(0, 2*np.pi, size=(self.n_samples, 1))
-        hit_angle_z = np.random.uniform(-np.pi*self.hit_max_z_angle/180, np.pi*self.hit_max_z_angle/180, size=(self.n_samples, 1))
-        self.start_velocity = np.concatenate([start_velocity_norm*np.cos(hit_angle_z)*np.cos(hit_angle_xy),
-                                              start_velocity_norm*np.cos(hit_angle_z)*np.sin(hit_angle_xy),
-                                              start_velocity_norm*np.sin(hit_angle_z)], axis=-1)
+            self.start_velocity_norm = log_rand(*self.velocity_range, size=(self.n_samples, 1))
+            hit_angle_xy = np.random.uniform(0, 2*np.pi, size=(self.n_samples, 1))
+            hit_angle_z = np.random.uniform(-np.pi*self.hit_max_z_angle/180, np.pi*self.hit_max_z_angle/180, size=(self.n_samples, 1))
+            self.start_velocity = np.concatenate([self.start_velocity_norm*np.cos(hit_angle_z)*np.cos(hit_angle_xy),
+                                                self.start_velocity_norm*np.cos(hit_angle_z)*np.sin(hit_angle_xy),
+                                                self.start_velocity_norm*np.sin(hit_angle_z)], axis=-1)
+        else:
+            self.start_velocity_norm = np.random.uniform(low=0, high=0.5*self.start_velocity_norm, size=(self.n_samples, 1))
+            hit_angle_xy = np.random.uniform(0, 2*np.pi, size=(self.n_samples, 1))
+            hit_angle_z = np.random.uniform(-np.pi*self.hit_max_z_angle/180, np.pi*self.hit_max_z_angle/180, size=(self.n_samples, 1))
+            self.start_velocity = np.concatenate([self.start_velocity_norm*np.cos(hit_angle_z)*np.cos(hit_angle_xy),
+                                                self.start_velocity_norm*np.cos(hit_angle_z)*np.sin(hit_angle_xy),
+                                                self.start_velocity_norm*np.sin(hit_angle_z)], axis=-1)
         
-        velocity_after_hit_norm = np.random.uniform(low=0, high=0.95*np.expand_dims(start_velocity_norm, axis=1), size=(self.n_samples, self.n_frames, 1))
+        velocity_after_hit_norm = np.random.uniform(low=0, high=0.5*np.expand_dims(self.start_velocity_norm, axis=1), size=(self.n_samples, self.n_frames, 1))
         hit_angle_xy = np.random.uniform(0, 2*np.pi, size=(self.n_samples, self.n_frames, 1))
         hit_angle_z = np.random.uniform(-np.pi, np.pi, size=(self.n_samples, self.n_frames, 1))
         velocity_after_hit = np.concatenate([velocity_after_hit_norm*np.cos(hit_angle_z)*np.cos(hit_angle_xy),
@@ -99,7 +107,8 @@ class TrajectoriesGenerator:
     def add_hits(self, i):
         self.velocity[:, i] = np.where(self.hits[:, i, :1] == 1, self.hits[:, i, 1:], self.velocity[:, i])
     
-    def generate_trajectories(self):
+    def generate_trajectories(self, generate_start_position=True):
+        self.draw_parameters(generate_start_position)
         self.position = np.zeros((self.n_samples, self.n_frames, 3))
         self.velocity = np.zeros((self.n_samples, self.n_frames, 3))
         self.position[:, 0] = self.start_position.copy()
@@ -122,6 +131,22 @@ class TrajectoriesGenerator:
     def get_position_z(self, diameter):
         return VOLLEYBALL_DIAMETER/np.tan(np.pi/4*diameter)
     
+    def concat_trajectories(self, positions, velocities, backward_positions, backward_velocities):
+        backward_positions = backward_positions[:, 1:][:, ::-1]
+        backward_velocities = backward_velocities[:, 1:][:, ::-1]
+
+        positions = np.concatenate([backward_positions, positions], axis=1)
+        velocities = np.concatenate([backward_velocities, velocities], axis=1)
+
+        window_start = np.random.randint(0, self.n_frames-1, size=self.n_samples)
+        window = np.linspace(window_start, window_start+self.n_frames-1, num=self.n_frames, dtype=int)
+        window = np.expand_dims(np.transpose(window, (1, 0)), axis=-1)
+
+        positions = np.take_along_axis(positions, window, axis=1)
+        velocities = np.take_along_axis(velocities, window, axis=1)
+
+        return positions, velocities
+
     def normalize(self, positions):
         """
         Normalizes real 3D position coordinates (in meters) to image coordinates (in pixels).
@@ -158,25 +183,32 @@ class TrajectoriesGenerator:
         
         return image_positions, image_diameter
     
-    def clip(self, image_positions, image_diameter):
+    def clip(self, image_positions, image_diameter, velocities):
         image_positions = np.where(np.any((image_positions < 0) | (image_positions > 1), axis=-1, keepdims=True),
                                    -1,
                                    image_positions)
         image_diameter = np.where(image_diameter < VOLLEYBALL_DIAMETER/self.field_size,
                                   -1,
                                   image_diameter)
+        velocities = np.where(np.any(image_positions == -1, axis=-1, keepdims=True),
+                              -1,
+                              velocities)
+        velocities = np.where(image_diameter == -1,
+                              -1,
+                              velocities)
 
-        
-        return image_positions, image_diameter
+        return image_positions, image_diameter, velocities
     
     def __call__(self, add_noise=True, clip=True):
-        self.draw_parameters()
-        positions, velocities = self.generate_trajectories()
+        positions, velocities = self.generate_trajectories(generate_start_position=True)
+        self.diff_time = -self.diff_time
+        backward_positions, backward_velocities = self.generate_trajectories(generate_start_position=False)
+        positions, velocities = self.concat_trajectories(positions, velocities, backward_positions, backward_velocities)
         image_positions, image_diameter = self.normalize(positions)
         if add_noise:
             image_positions, image_diameter = self.add_noise(image_positions, image_diameter)
         if clip:
-            image_positions, image_diameter = self.clip(image_positions, image_diameter)
+            image_positions, image_diameter, velocities = self.clip(image_positions, image_diameter, velocities)
 
         return image_positions, image_diameter, velocities
     
