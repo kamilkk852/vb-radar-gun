@@ -1,4 +1,7 @@
 import numpy as np
+import pickle
+from fire import Fire
+from tqdm import tqdm
 
 G = 9.81
 VOLLEYBALL_DIAMETER = 0.21
@@ -39,8 +42,8 @@ class TrajectoriesGenerator:
         self.no_object_prob = no_object_prob
         self.field_size = field_size
         self.hit_max_z_angle = hit_max_z_angle
-        self.min_hit_distance = self.get_position_z(ball_size_range[1]) + np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/30
-        self.max_hit_distance = self.get_position_z(ball_size_range[0]) - np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/30
+        self.min_hit_distance = self.get_position_z(ball_size_range[1]) + np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
+        self.max_hit_distance = self.get_position_z(ball_size_range[0]) - np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
         self.padding_size = padding_size
         self.params = self.__dict__.copy()
         print("Initalization params:\n", ", ".join([f"{k}={v}" for k, v in self.params.items()]))
@@ -238,3 +241,15 @@ class TrajectoriesGenerator:
 
         return image_positions, image_diameter, velocities
     
+def generate(data_path, n_samples, n_frames, batch_size=1000, **kwargs):
+    image_positions = np.zeros((n_samples, n_frames, 2))
+    image_diameter = np.zeros((n_samples, n_frames, 1))
+    velocities = np.zeros((n_samples, n_frames, 3))
+    generator = TrajectoriesGenerator(min(n_samples, batch_size), n_frames, **kwargs)
+    for i in tqdm(range(0, n_samples, batch_size), unit_scale=batch_size):
+        image_positions[i:i+batch_size], image_diameter[i:i+batch_size], velocities[i:i+batch_size] = generator()
+
+    pickle.dump((image_positions, image_diameter, velocities), open(data_path, 'wb'))
+
+if __name__ == "__main__":
+    Fire(generate)
