@@ -52,7 +52,8 @@ class TrajectoriesGenerator:
 
     def draw_parameters(self, generate_start_position=True):
         if generate_start_position:
-            self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*np.random.choice(self.slow_motion_coefs, size=(self.n_samples, 1)))
+            self.random_slow_motion_coef = np.random.choice(self.slow_motion_coefs, size=(self.n_samples, 1))
+            self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*self.random_slow_motion_coef)
             
             self.view_angle_constant = log_rand(0.2, 5, size=(self.n_samples, 1, 1))
             self.min_hit_distance = self.get_position_z(self.ball_size_range[1]).min() + np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
@@ -244,7 +245,7 @@ class TrajectoriesGenerator:
         if random_padding:
             image_positions, image_diameter, velocities = self.random_padding(image_positions, image_diameter, velocities)
 
-        return image_positions, image_diameter, velocities
+        return image_positions, image_diameter, velocities, self.random_slow_motion_coef
     
 def generate(data_path, n_samples, n_frames, batch_size=1000, **kwargs):
     image_positions = np.zeros((n_samples, n_frames, 2))
