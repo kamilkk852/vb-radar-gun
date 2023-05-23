@@ -189,10 +189,10 @@ class TrajectoriesGenerator:
         return image_positions, image_diameter
     
     def clip(self, image_positions, image_diameter, velocities):
-        image_positions = np.where(np.any((image_positions < 0) | (image_positions > 1), axis=-1, keepdims=True),
+        image_positions = np.where(np.any((image_positions < 0) | (image_positions > 1) | np.isnan(image_positions), axis=-1, keepdims=True),
                                    -1,
                                    image_positions)
-        image_diameter = np.where(image_diameter < VOLLEYBALL_DIAMETER/self.field_size,
+        image_diameter = np.where((image_diameter < self.ball_size_range[0]) | (image_diameter > self.ball_size_range[1]) | np.isnan(image_diameter),
                                   -1,
                                   image_diameter)
         velocities = np.where(np.any(image_positions == -1, axis=-1, keepdims=True),
@@ -201,6 +201,9 @@ class TrajectoriesGenerator:
         velocities = np.where(image_diameter == -1,
                               -1,
                               velocities)
+        velocities = np.where((np.linalg.norm(velocities, axis=-1, keepdims=True) > self.velocity_range[1]),
+                     -1,
+                     velocities).astype(np.float32)
 
         return image_positions, image_diameter, velocities
     
