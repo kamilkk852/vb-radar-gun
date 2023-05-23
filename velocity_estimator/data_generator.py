@@ -42,8 +42,6 @@ class TrajectoriesGenerator:
         self.no_object_prob = no_object_prob
         self.field_size = field_size
         self.hit_max_z_angle = hit_max_z_angle
-        self.min_hit_distance = self.get_position_z(ball_size_range[1]) + np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
-        self.max_hit_distance = self.get_position_z(ball_size_range[0]) - np.sin(np.pi/180*hit_max_z_angle)*velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
         self.padding_size = padding_size
         self.params = self.__dict__.copy()
         print("Initalization params:\n", ", ".join([f"{k}={v}" for k, v in self.params.items()]))
@@ -55,6 +53,10 @@ class TrajectoriesGenerator:
     def draw_parameters(self, generate_start_position=True):
         if generate_start_position:
             self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*np.random.choice(self.slow_motion_coefs, size=(self.n_samples, 1)))
+            
+            self.view_angle_constant = log_rand(0.2, 5, size=(self.n_samples, 1, 1))
+            self.min_hit_distance = self.get_position_z(self.ball_size_range[1]).min() + np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
+            self.max_hit_distance = self.get_position_z(self.ball_size_range[0]).max() - np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
 
             self.angle_xy = np.random.uniform(*self.angle_xy_range, size=self.n_samples)
             self.angle_y = np.random.uniform(*self.angle_y_range, size=self.n_samples)
@@ -131,10 +133,10 @@ class TrajectoriesGenerator:
         return self.position, self.velocity
     
     def get_diameter(self, positions):
-        return 4/np.pi*np.arctan(VOLLEYBALL_DIAMETER/positions[:, :, 2:])
+        return 4/np.pi*np.arctan(self.view_angle_constant*VOLLEYBALL_DIAMETER/positions[:, :, 2:])
     
     def get_position_z(self, diameter):
-        return VOLLEYBALL_DIAMETER/np.tan(np.pi/4*diameter)
+        return self.view_angle_constant*VOLLEYBALL_DIAMETER/np.tan(np.pi/4*diameter)
     
     def concat_trajectories(self, positions, velocities, backward_positions, backward_velocities):
         backward_positions = backward_positions[:, 1:][:, ::-1]
