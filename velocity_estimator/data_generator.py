@@ -56,13 +56,14 @@ class TrajectoriesGenerator:
             self.diff_time = 1/(DEFAULT_FRAMES_PER_SEC*self.random_slow_motion_coef)
             
             self.view_angle_constant = log_rand(0.2, 5, size=(self.n_samples, 1, 1))
-            self.min_hit_distance = self.get_position_z(self.ball_size_range[1]).min() + np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
-            self.max_hit_distance = self.get_position_z(self.ball_size_range[0]).max() - np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*2/DEFAULT_FRAMES_PER_SEC
+            self.min_hit_distance = self.get_position_z(self.ball_size_range[1]) + np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*3/DEFAULT_FRAMES_PER_SEC
+            self.max_hit_distance = self.get_position_z(self.ball_size_range[0]) - np.sin(np.pi/180*self.hit_max_z_angle)*self.velocity_range[1]*3/DEFAULT_FRAMES_PER_SEC
 
             self.angle_xy = np.random.uniform(*self.angle_xy_range, size=self.n_samples)
             self.angle_y = np.random.uniform(*self.angle_y_range, size=self.n_samples)
             self.start_position = np.concatenate([np.random.uniform(-2, 2, size=(self.n_samples, 2)),
-                                                log_rand(self.min_hit_distance, self.max_hit_distance, size=(self.n_samples, 1))], axis=-1)
+                                                  np.clip(log_rand(self.min_hit_distance.mean(), self.max_hit_distance.mean(), size=(self.n_samples, 1)),
+                                                        self.min_hit_distance[:, 0], self.max_hit_distance[:, 0])], axis=-1)
 
             self.start_velocity_norm = log_rand(*self.velocity_range, size=(self.n_samples, 1))
             hit_angle_xy = np.random.uniform(0, 2*np.pi, size=(self.n_samples, 1))
@@ -251,11 +252,12 @@ def generate(data_path, n_samples, n_frames, batch_size=1000, **kwargs):
     image_positions = np.zeros((n_samples, n_frames, 2))
     image_diameter = np.zeros((n_samples, n_frames, 1))
     velocities = np.zeros((n_samples, n_frames, 3))
+    slow_motion_coefs = np.zeros((n_samples, 1))
     generator = TrajectoriesGenerator(min(n_samples, batch_size), n_frames, **kwargs)
     for i in tqdm(range(0, n_samples, batch_size), unit_scale=batch_size):
-        image_positions[i:i+batch_size], image_diameter[i:i+batch_size], velocities[i:i+batch_size] = generator()
+        image_positions[i:i+batch_size], image_diameter[i:i+batch_size], velocities[i:i+batch_size], slow_motion_coefs[i:i+batch_size] = generator(add_noise=False)
 
-    pickle.dump((image_positions, image_diameter, velocities), open(data_path, 'wb'))
+    pickle.dump((image_positions, image_diameter, velocities, slow_motion_coefs), open(data_path, 'wb'))
 
 if __name__ == "__main__":
     Fire(generate)
