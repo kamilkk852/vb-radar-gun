@@ -160,8 +160,8 @@ class TrajectoriesGenerator:
         """
         Normalizes real 3D position coordinates (in meters) to image coordinates (in pixels).
         """
-        image_positions = positions[:, :, :2]/self.field_size+0.5
         image_diameter = self.get_diameter(positions)
+        image_positions = positions[:, :, :2]*image_diameter/VOLLEYBALL_DIAMETER+0.5
 
         return image_positions, image_diameter
 
@@ -195,18 +195,16 @@ class TrajectoriesGenerator:
         image_positions = np.where(np.any((image_positions < 0) | (image_positions > 1) | np.isnan(image_positions), axis=-1, keepdims=True),
                                    -1,
                                    image_positions)
-        image_diameter = np.where((image_diameter < self.ball_size_range[0]) | (image_diameter > self.ball_size_range[1]) | np.isnan(image_diameter),
+        image_diameter = np.where((image_diameter < self.ball_size_range[0]) | (image_diameter > self.ball_size_range[1]) | \
+                                  np.isnan(image_diameter) | np.any(image_positions == -1, axis=-1, keepdims=True),
                                   -1,
                                   image_diameter)
+        image_positions = np.where(image_diameter == -1,
+                            -1,
+                            image_positions)
         velocities = np.where(np.any(image_positions == -1, axis=-1, keepdims=True),
                               -1,
                               velocities)
-        velocities = np.where(image_diameter == -1,
-                              -1,
-                              velocities)
-        velocities = np.where((np.linalg.norm(velocities, axis=-1, keepdims=True) > self.velocity_range[1]),
-                     -1,
-                     velocities).astype(np.float32)
 
         return image_positions, image_diameter, velocities
     
