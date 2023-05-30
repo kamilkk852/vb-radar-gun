@@ -248,10 +248,10 @@ class TrajectoriesGenerator:
         return image_positions, image_diameter, velocities, self.random_slow_motion_coef
     
 def generate(data_path, n_samples, n_frames, batch_size=1000, **kwargs):
-    image_positions = np.zeros((n_samples, n_frames, 2))
-    image_diameter = np.zeros((n_samples, n_frames, 1))
-    velocities = np.zeros((n_samples, n_frames, 3))
-    slow_motion_coefs = np.zeros((n_samples, 1))
+    image_positions = np.zeros((n_samples, n_frames, 2), dtype=np.float32)
+    image_diameter = np.zeros((n_samples, n_frames, 1), dtype=np.float32)
+    velocities = np.zeros((n_samples, n_frames, 3), dtype=np.float32)
+    slow_motion_coefs = np.zeros((n_samples, 1), dtype=np.float32)
     generator = TrajectoriesGenerator(min(n_samples, batch_size), n_frames, **kwargs)
     for i in tqdm(range(0, n_samples, batch_size), unit_scale=batch_size):
         image_positions[i:i+batch_size], image_diameter[i:i+batch_size], velocities[i:i+batch_size], slow_motion_coefs[i:i+batch_size] = generator(**kwargs)
