@@ -169,8 +169,7 @@ class TrajectoriesGenerator:
         pos_noise = np.random.normal(0., self.pos_std_err, size=image_positions.shape)
         image_positions = image_positions + pos_noise
 
-        d_noise = image_diameter*np.random.lognormal(0., np.log(1+self.d_std_err), size=image_diameter.shape)
-        image_diameter = image_diameter + d_noise
+        image_diameter = image_diameter*np.random.lognormal(0., np.log(1+self.d_std_err), size=image_diameter.shape)
         
         should_be_random = np.random.uniform(0, 1, size=image_diameter.shape) < self.random_object_prob
         random_positions = np.random.uniform(0, 1, size=image_positions.shape)
