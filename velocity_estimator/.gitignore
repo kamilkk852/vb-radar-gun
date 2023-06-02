@@ -1,0 +1,6 @@
+**pycache**
+*.pkl
+*.h5
+*.png
+velocity_model_*
+*_checkpoints
