@@ -21,13 +21,12 @@ class TrajectoriesGenerator:
                  ball_size_range=(7/640, 1/8),
                  velocity_range=(15, 45),
                  avg_hits=3.,
-                 pos_std_err=0.003,
-                 d_std_err=0.1,
+                 pos_std_err=0.002,
+                 d_std_err=0.15,
                  random_object_prob=0.15,
                  no_object_prob=0.5,
                  hit_max_z_angle=15,
-                 field_size=30,
-                 padding_size=0.25):
+                 padding_size=0.1):
         self.n_samples = n_samples
         self.n_frames = n_frames
         self.angle_xy_range = angle_xy_range
@@ -40,7 +39,6 @@ class TrajectoriesGenerator:
         self.d_std_err = d_std_err
         self.random_object_prob = random_object_prob
         self.no_object_prob = no_object_prob
-        self.field_size = field_size
         self.hit_max_z_angle = hit_max_z_angle
         self.padding_size = padding_size
         self.params = self.__dict__.copy()
