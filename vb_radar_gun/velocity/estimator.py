@@ -49,7 +49,7 @@ class VelocityEstimator:
 
     def _find_best_slope(
         self, times: np.ndarray, distances: np.ndarray
-    ) -> tuple[float, float]:
+    ) -> float:
         best_performace = 0.0
         best_slope = 0.0
 
