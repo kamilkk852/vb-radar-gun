@@ -20,7 +20,7 @@ streamlit = "~1.41"
 optional = true
 
 [tool.poetry.group.train.dependencies]
-ultralytics = "^8.3.49"
+ultralytics = "~8.3.49"
 
 [build-system]
 requires = ["poetry-core"]
