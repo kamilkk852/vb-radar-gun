@@ -1,7 +1,6 @@
 **__pycache__**
 detections/
 labels/
-models/
 predictions/
 videos/
 results/
