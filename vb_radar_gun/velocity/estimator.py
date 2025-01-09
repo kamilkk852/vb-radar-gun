@@ -10,9 +10,10 @@ class VelocityEstimator:
     def __init__(
         self,
         smooth_window: int = 5,
-        ball_diameter: float = 0.21,
+        ball_diameter: float = 0.207,
         regression_points: int = 30,
-        model: RANSACRegressor = RANSACRegressor(stop_probability=0.7, random_state=0),
+        model: RANSACRegressor = RANSACRegressor(
+            stop_probability=0.7, random_state=0),
         camera_properties: CameraProperties = CameraProperties(
             focal_length=15 / 1000, sensor_width=44.2 / 1000, image_width=1920
         ),
@@ -20,7 +21,8 @@ class VelocityEstimator:
         self.smooth_window = smooth_window
         self.regression_points = regression_points
         self.camera_properties = camera_properties
-        self.distance_calculator = DistanceCalculator(ball_diameter, camera_properties)
+        self.distance_calculator = DistanceCalculator(
+            ball_diameter, camera_properties)
         self.model = model
 
     def _smooth_detections(self, detections: Detections) -> Detections:
@@ -40,6 +42,8 @@ class VelocityEstimator:
         return np.array(detections.times), np.array(distances)
 
     def _slope_to_velocity(self, slope: float) -> float:
+        # Multiply by 1.1 to account for ball size overestimation
+        # and averaging of velocity over a significant number of frames
         return 1.1 * 3.6 * slope
 
     def _criterion(self, slope: float, r2: float) -> bool:
@@ -54,8 +58,8 @@ class VelocityEstimator:
         best_slope = 0.0
 
         for i in range(max(1, len(times) - self.regression_points)):
-            X = times[i : i + self.regression_points].reshape(-1, 1)
-            y = distances[i : i + self.regression_points]
+            X = times[i: i + self.regression_points].reshape(-1, 1)
+            y = distances[i: i + self.regression_points]
 
             self.model.fit(X, y)
             slope = abs(self.model.estimator_.coef_[0])

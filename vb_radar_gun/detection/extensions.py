@@ -21,10 +21,11 @@ class DetectionExtension(ABC):
 class VideoAnnotator(DetectionExtension):
     def __init__(self, output_path: str = "predictions", output_fps: int = 25):
         self.output_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), output_path
+            os.path.dirname(os.path.dirname(
+                os.path.dirname(__file__))), output_path
         )
         self.output_fps = output_fps
-        self.bbox_annotator = sv.BoundingBoxAnnotator()
+        self.bbox_annotator = sv.BoxAnnotator()
         self.label_annotator = sv.LabelAnnotator()
 
     def _output_video_path(self, video_path: str) -> str:
@@ -43,7 +44,7 @@ class VideoAnnotator(DetectionExtension):
         video_info = self._video_info(video_path)
         output_video_path = self._output_video_path(video_path)
 
-        return sv.VideoSink(output_video_path, video_info=video_info, codec="x264")
+        return sv.VideoSink(output_video_path, video_info=video_info, codec="avc1")
 
     def before_processing(self, video_path: str) -> None:
         os.makedirs(self.output_path, exist_ok=True)
@@ -55,7 +56,8 @@ class VideoAnnotator(DetectionExtension):
             return
 
         labels = [f"#{tracker_id}" for tracker_id in detections.tracker_id]
-        annotated_frame = self.bbox_annotator.annotate(frame, detections=detections)
+        annotated_frame = self.bbox_annotator.annotate(
+            frame, detections=detections)
         annotated_frame = self.label_annotator.annotate(
             annotated_frame, detections=detections, labels=labels
         )

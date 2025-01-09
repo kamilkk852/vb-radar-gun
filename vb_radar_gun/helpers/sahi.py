@@ -23,6 +23,7 @@ def sahi_to_sv(sahi_predictions) -> sv.Detections:
     class_ids = np.array(class_ids)
 
     # Create sv.Detections object
-    detections = sv.Detections(xyxy=bboxes, confidence=scores, class_id=class_ids)
+    detections = sv.Detections(
+        xyxy=bboxes, confidence=scores, class_id=class_ids)
 
     return detections

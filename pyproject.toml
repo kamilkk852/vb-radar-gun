@@ -7,16 +7,20 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~3.10"
-torch = "^2.5.1"
-matplotlib = "^3.9.4"
-pandas = "^2.2.3"
-scikit-learn = "^1.6.0"
-supervision = "^0.25.1"
-ultralytics = "^8.3.49"
+torch = "~2.5.1"
+matplotlib = "~3.9"
+pandas = "~2.2.3"
+scikit-learn = "~1.6"
+supervision = "~0.25"
 tqdm = "^4.67.1"
-sahi = "^0.11.19"
-streamlit = "^1.41.1"
+sahi = "~0.11.19"
+streamlit = "~1.41"
 
+[tool.poetry.group.train]
+optional = true
+
+[tool.poetry.group.train.dependencies]
+ultralytics = "^8.3.49"
 
 [build-system]
 requires = ["poetry-core"]

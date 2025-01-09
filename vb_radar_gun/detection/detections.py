@@ -11,7 +11,8 @@ class Detections:
         self.times = times
         self.detections_list = detections_list
 
-        not_none = [detections is not None for detections in self.detections_list]
+        not_none = [
+            detections is not None for detections in self.detections_list]
         self.times = [time for time, nn in zip(self.times, not_none) if nn]
         self.detections_list = [
             detections for detections in self.detections_list if detections
@@ -33,7 +34,8 @@ class Detections:
         filtered_times = [
             time for time, detections in zip(self.times, detections) if detections
         ]
-        filtered_detections = [detections for detections in detections if detections]
+        filtered_detections = [
+            detections for detections in detections if detections]
 
         return Detections(filtered_times, filtered_detections)
 

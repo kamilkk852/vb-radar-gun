@@ -20,7 +20,8 @@ class DetectionModel:
         half: bool = True,
     ):
         self.model_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), model_path
+            os.path.dirname(os.path.dirname(
+                os.path.dirname(__file__))), model_path
         )
         self.model_type = model_type
         self.confidence_threshold = confidence_threshold
@@ -65,7 +66,7 @@ class VolleyballDetector:
         track_parameters: dict[str, Any] = {
             "track_activation_threshold": 0.25,
             "lost_track_buffer": 15,
-            "minimum_consecutive_frames": 5,
+            "minimum_consecutive_frames": 1,
         },
         extensions: list[DetectionExtension] = [VideoAnnotator()],
     ):
@@ -81,7 +82,8 @@ class VolleyballDetector:
             extension.before_processing(video_path)
 
         video_info = sv.VideoInfo.from_video_path(video_path=video_path)
-        tracker = sv.ByteTrack(frame_rate=video_info.fps, **self.track_parameters)
+        tracker = sv.ByteTrack(frame_rate=video_info.fps,
+                               **self.track_parameters)
         frames_gen = sv.get_video_frames_generator(
             video_path,
             start=int(st_time * video_info.fps),
@@ -90,8 +92,10 @@ class VolleyballDetector:
 
         times: list[float] = []
         detections_list: list[sv.Detections] = []
-        for frame_id, frame in tqdm(enumerate(frames_gen)):
-            detections = self.detection_model.process_frame(frame, self.sahi_parameters)
+        for frame_id, frame in tqdm(enumerate(frames_gen),
+                                    total=video_info.total_frames if end_time is None else int(video_info.fps*(end_time-st_time))):
+            detections = self.detection_model.process_frame(
+                frame, self.sahi_parameters)
             if detections:
                 detections = tracker.update_with_detections(detections)
                 times.append(frame_id / video_info.fps)
@@ -99,6 +103,7 @@ class VolleyballDetector:
 
             for extension in self.extensions:
                 extension.process_frame(frame, detections)
+                
         detections = Detections(times, detections_list)
 
         for extension in self.extensions:
