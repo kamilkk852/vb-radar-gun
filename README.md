@@ -49,11 +49,13 @@ The `model_results.csv` file contains detailed results for each video.
 
 # Usage example
 ```python
-from vb_radar_gun import VolleyballDetector, VelocityEstimator
+from vb_radar_gun import VolleyballDetector, VelocityEstimator, CameraProperties
 
 detector = VolleyballDetector()
 detections = detector.detect("videos/80kmh.MP4")
-vel_estimator = VelocityEstimator()
+vel_estimator = VelocityEstimator(camera_properties=CameraProperties(
+    focal_length=your_camera_focal_length, sensor_width=your_camera_sensor_with, image_width=your_camera_image_width
+))
 print(vel_estimator.estimate_velocity(detections))
 ```
 # Conclusions
