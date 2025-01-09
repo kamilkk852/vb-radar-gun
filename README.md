@@ -15,8 +15,7 @@ Only Volleyball Detector requires extensive traning as Velocity Estimator is bas
 The Volleyball Detector is a YOLOv8n model, that was trained on a dataset consisting of 18926 images using the Ultralytics library.
 
 # Evaluation set
-The evaluation set includes:
-**9 videos** with varied characteristics:
+The evaluation set includes **9 videos** with varied characteristics:
 - Distinct backgrounds
 - Different ball-throwing movements
 - Wide range of ball speed
